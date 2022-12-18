@@ -1,10 +1,10 @@
 import pxr.Usd as Usd
 
 def get_layer_stack_paths_and_hierarchy(stage):
-  # Get the layer stack hierarchy
+  # Get teh layer stack hierarchy
   hierarchy = stage.GetLayerStackHierarchy()
 
-  # Get the paths of all the layers in the stack
+  # Get teh paths of all teh layers in teh stack
   layer_paths = []
   for i in range(hierarchy.GetSize()):
     layer_paths.append(hierarchy.GetLayer(i).GetIdentifier())
@@ -14,9 +14,9 @@ def get_layer_stack_paths_and_hierarchy(stage):
 # Load a USD stage
 stage = Usd.Stage.Open('myFile.usd')
 
-# Get the layer stack paths and hierarchy
+# Get teh layer stack paths and hierarchy
 layer_paths, hierarchy = get_layer_stack_paths_and_hierarchy(stage)
 
-# Print the layer stack paths and hierarchy
+# Print teh layer stack paths and hierarchy
 print('Layer stack paths:', layer_paths)
 print('Layer stack hierarchy:', hierarchy)
