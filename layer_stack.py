@@ -1,22 +1,18 @@
-import pxr.Usd as Usd
+from pxr import Usd
 
-def get_layer_stack_paths_and_hierarchy(stage):
-  # Get teh layer stack hierarchy
-  hierarchy = stage.GetLayerStackHierarchy()
+usd_file = r"/path/to/usd/asset.usda"
 
-  # Get teh paths of all teh layers in teh stack
-  layer_paths = []
-  for i in range(hierarchy.GetSize()):
-    layer_paths.append(hierarchy.GetLayer(i).GetIdentifier())
+stage = Usd.Stage.Open(usd_file)
 
-  return layer_paths, hierarchy
+layer_stack = stage.GetLayerStack()
 
-# Load a USD stage
-stage = Usd.Stage.Open('myFile.usd')
+for lyr in layer_stack:
+    print(lyr)
 
-# Get teh layer stack paths and hierarchy
-layer_paths, hierarchy = get_layer_stack_paths_and_hierarchy(stage)
+root_layer = stage.GetRootLayer()
+# refs = root_layer.GetExternalReferences()
+refs = root_layer.GetLoadedLayers()
+layer_paths = [str(x.resolvedPath).replace('\\', '/') for x in refs if str(x.resolvedPath)]
+print(layer_paths)
 
-# Print teh layer stack paths and hierarchy
-print('Layer stack paths:', layer_paths)
-print('Layer stack hierarchy:', hierarchy)
+
