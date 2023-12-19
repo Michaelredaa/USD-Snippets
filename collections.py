@@ -1,3 +1,4 @@
+from pxr import Usd
 def get_all_collections(prim: Usd.Prim) -> dict:
     data = {}
     for col in Usd.CollectionAPI.GetAllCollections(prim):
