@@ -140,6 +140,15 @@ def add_mtlx_attrs(preview_shader: UsdShade.Shader):
                     )
 
 
+def bind_material(stage: Usd.Stage, prim: Usd.Prim, mtl_path: Sdf.Path, purpose=UsdShade.Tokens.full):
+    material = UsdShade.Material.Define(stage, mtl_path)
+
+    if prim.GetTypeName() == 'GeomSubset':
+        prim.GetAttribute("familyName").Set("materialBind")
+
+    UsdShade.MaterialBindingAPI(prim).Bind(material, materialPurpose=purpose)
+
+
 def create_material(stage: Usd.Stage, material_path: Sdf.Path, geo_path: Sdf.Path):
     preview_path = material_path.AppendChild("preview")
     mtlx_path = material_path.AppendChild("mtlx")
