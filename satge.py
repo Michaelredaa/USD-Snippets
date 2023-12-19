@@ -4,6 +4,10 @@ from contextlib import contextmanager
 from pxr import Usd, Sdf
 
 
+def resolve_path(stage: Usd.Stage, external_path: str):
+    return stage.ResolveIdentifierToEditTarget(external_path)
+
+
 @contextmanager
 def open_stage(filepath):
     """Open or create stage"""
