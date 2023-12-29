@@ -6,13 +6,13 @@ from pxr import Usd, UsdGeom, Vt
 import numpy as np
 
 
-def visualize_attr(prim: Usd.Prim, attr_name: str):
+def visualize_attr(prim: Usd.Prim, attr_name: str, time=0):
     attr = prim.GetAttribute(attr_name)
 
     if not attr.HasValue():
         return
 
-    attr_values = np.array(attr.Get())
+    attr_values = np.array(attr.Get(time))
 
     attr_shape = attr_values.shape
 
@@ -24,7 +24,7 @@ def visualize_attr(prim: Usd.Prim, attr_name: str):
     displayColor_attr = UsdGeom.Mesh(prim).GetDisplayColorAttr()
     displayColor_attr.SetMetadata('interpolation', attr.GetMetadata("interpolation"))
 
-    displayColor_attr.Set(Vt.Vec3fArray.FromNumpy(attr_values))
+    displayColor_attr.Set(Vt.Vec3fArray.FromNumpy(attr_values), time)
 
 
 if __name__ == '__main__':
