@@ -13,3 +13,8 @@ def delete_prim(prim: Usd.Prim):
         if not prim_spec.layer.Apply(edit):
             raise Exception("Failed to apply layer edit!")
         prim_spec.layer.Save()
+
+
+def get_kind(prim: Usd.Prim):
+    return Usd.ModelAPI(prim).GetKind()
+    
