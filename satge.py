@@ -63,10 +63,10 @@ def create_stage_with_sublayer(stage_filepath, sublayer_paths):
 
 
 def copy_prim(source_stage: Usd.Stage, source_path: Sdf.Path,
-              dist_stage: Usd.Stage, dist_path: Sdf.Path, ):
-
+              dist_stage: Usd.Stage, dist_path: Sdf.Path):
     sprim = source_stage.GetPrimAtPath(source_path)
     dprim = dist_stage.DefinePrim(dist_path, sprim.GetTypeName())
+    Usd.ModelAPI(dprim).SetKind(Usd.ModelAPI(sprim).GetKind())
 
     for sprop in sprim.GetProperties():
         if isinstance(sprop, Usd.Relationship):
@@ -77,6 +77,6 @@ def copy_prim(source_stage: Usd.Stage, source_path: Sdf.Path,
 
         elif isinstance(sprop, Usd.Attribute):
             value = sprop.Get()
-            if value:
+            if value is not None:
                 dattr = dprim.CreateAttribute(sprop.GetName(), sprop.GetTypeName())
                 dattr.Set(value)
