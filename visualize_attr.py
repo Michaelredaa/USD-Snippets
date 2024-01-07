@@ -12,8 +12,17 @@ def normalize_2d_array(arr: np.array):
     return normalized_arr
 
 
+def interpolate_colors(normalized_data, color_positions, colors):
+    colored_data = np.zeros_like(normalized_data)
+
+    for i in range(3):  # Iterate over RGB channels
+        colored_data[:, i] = np.interp(normalized_data[:, i], color_positions, colors[:, i])
+
+    return colored_data
+
+
 def visualize_attr(prim: Usd.Prim, attr_name: str, time=0, channel=None, normalize=False,
-                   multiplier=1.0):
+                   multiplier=1.0, ramp_colors=[[(0, 0, 0), (1, 1, 1)], [0, 1]]):
     attr = prim.GetAttribute(attr_name)
 
     if not attr.HasValue():
@@ -41,6 +50,12 @@ def visualize_attr(prim: Usd.Prim, attr_name: str, time=0, channel=None, normali
         interpolation = 'vertex'
 
     displayColor_attr.SetMetadata('interpolation', interpolation)
+
+    if normalize:
+        colors, color_points = ramp_colors
+        color_points = np.array(color_points)
+        colors = np.array(colors)
+        attr_values = interpolate_colors(attr_values, color_points, colors)
 
     displayColor_attr.Set(Vt.Vec3fArray.FromNumpy(attr_values), time)
 
