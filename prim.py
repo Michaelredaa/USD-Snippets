@@ -92,7 +92,7 @@ def create_bbox_prim(prim: Usd.Prim, box_path: str) -> UsdGeom.Mesh:
 
     points = []
     for i in range(8):
-        corner = bbox.GetBox().GetCorner(i)
+        corner = bbox.GetCorner(i)
         points.append(corner)
 
     mesh = UsdGeom.Mesh.Define(stage, box_path)
