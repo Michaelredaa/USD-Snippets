@@ -172,6 +172,17 @@ def create_material(stage: Usd.Stage, material_path: Sdf.Path, geo_path: Sdf.Pat
     UsdShade.MaterialBindingAPI(geo_prim).Bind(mtlx_mtl, materialPurpose=UsdShade.Tokens.full)
     UsdShade.MaterialBindingAPI(geo_prim).Bind(preview_mtl, materialPurpose=UsdShade.Tokens.preview)
 
-
+def camera_project(mesh_prim: Usd.Prim, camera_prim: Usd.Prim, bind_name="bind"):
+    """
+    Binds the camera's coordinate space (NDC, raster, or screen) to a mesh's shader using USD's CoordSysAPI.
+    
+    After this function, use the following in mtlxposition node and plug it into the texcoord in texture node
+    - bind:ndc
+    - bind:raster
+    - bind:screen
+    """
+    coord_api = UsdShade.CoordSysAPI.Apply(mesh_prim, bind_name)
+    coord_api.Bind(camera_prim.GetPath())
+    
 if __name__ == '__main__':
     print(__name__)
