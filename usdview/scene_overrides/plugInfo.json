@@ -1,0 +1,16 @@
+{
+  "Plugins": [
+    {
+      "Type": "python",
+      "Name": "scene_overrides",
+      "Info": {
+        "Types": {
+          "scene_overrides.SceneOverrides": {
+            "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
+            "displayName": "Sence Overrides"
+          }
+        }
+      }
+    }
+  ]
+}
