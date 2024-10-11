@@ -9,18 +9,36 @@
     usdviewApi.layer - The currently selected Sdf.Layer in the Composition tab.
 
 https://github.com/PixarAnimationStudios/OpenUSD/blob/release/pxr/usdImaging/usdviewq/viewSettingsDataModel.py
+https://openusd.org/release/tut_usdview_plugin.html
+
+usdviewApi.dataModel- a full representation of usdview’s state. The majority of the data and functionality available to plugins is available through the data model.
+stage - The current Usd.Stage object.
+currentFrame - usdview’s current frame.
+viewSettings - A collection of settings which only affect the viewport. Most of these settings are normally controlled using usdview’s ‘View’ menu. Some examples are listed below.
+complexity - The scene’s subdivision complexity.
+freeCamera - The camera object used when usdview is not viewing through a camera prim. Plugins can modify this camera to change the view.
+renderMode - The mode used for rendering models (smooth-shaded, flat-shaded, wireframe, etc.).
+selection - The current state of prim and property selections.
+Common prim selection methods: getFocusPrim(), getPrims(), setPrim(prim), addPrim(prim), clearPrims()
+Common property selection methods: getFocusProp(), getProps(), setProp(prop), addProp(prop), clearProps()
+usdviewApi.qMainWindow - usdview’s Qt MainWindow object. It can be used as a parent for other Qt windows and dialogs, but it should not be used for any other purpose.
+usdviewApi.PrintStatus(msg) - Prints a status message at the bottom of the usdview window.
+GrabViewportShot()/GrabWindowShot() - Captures a screenshot of the viewport or the entire main window and returns it as a QImage.
 
 """
 
 import contextlib
 import functools
 
-from pxr.Usdviewq.qt import QtCore, QtGui, QtWidgets
+from PySide2 import QtCore, QtGui, QtWidgets
 from pxr import Sdf, Tf, Usd, UsdGeom
 from pxr.Usdviewq import plugin, appController, Utils
 
+from . import widgets
 
 CAMERAS_ROOT = "/cameras"
+
+
 
 class SceneOverrides(plugin.PluginContainer):
     """ The class which registers the "scence overrides" plugin to usdview """
@@ -58,6 +76,7 @@ class SceneOverrides(plugin.PluginContainer):
         """
         self.plugUIBuilder = plugUIBuilder
         self.set_menus()
+        self.add_tap()
 
     def deferredImport(self, moduleName):
         """Return a DeferredImport object which can be used to lazy load
@@ -78,10 +97,12 @@ class SceneOverrides(plugin.PluginContainer):
         create_camera_action = menu.addAction("Camera Form View")
         list_camera_action = menu.addAction("List Cameras")
         save_overrides_action = menu.addAction("Save Overrides")
+        save_snap_action = menu.addAction("Save Snap")
 
         create_camera_action.triggered.connect(functools.partial(self.on_create_camera))
         list_camera_action.triggered.connect(functools.partial(self.on_list_cameras))
         save_overrides_action.triggered.connect(functools.partial(self.on_save_overrides))
+        save_snap_action.triggered.connect(functools.partial(self.on_save_snap))
 
     def on_create_camera(self):
         stage = self.usdviewApi.dataModel.stage
@@ -96,9 +117,53 @@ class SceneOverrides(plugin.PluginContainer):
 
     def on_list_cameras(self):
         win = CamerasViewWidget(self.get_all_cameras(), plugin=self, parent=self.usdviewApi.qMainWindow)
+
         win.show()
 
         print("on_list_cameras")
+
+    def add_tap(self):
+        mainwindow = self.usdviewApi.qMainWindow
+        # model = self.usdviewApi.dataModel._selectionDataModel
+        model = self.usdviewApi.dataModel
+
+        tab_widgets = find_all_tab_widgets(mainwindow, "propertyInspector")
+        if tab_widgets:
+            tab_widget = tab_widgets[0]
+
+            new_tab = QtWidgets.QWidget()
+            new_tab.setObjectName("newTab")
+            layout = QtWidgets.QVBoxLayout()
+            new_tab.setLayout(layout)
+            tab_widget.addTab(new_tab, "New Tab")
+
+            edit_widget = widgets.EditAttrWidget()
+            new_tab.layout().addWidget(edit_widget)
+
+            model.selection.signalPropSelectionChanged.connect(
+                functools.partial(self.on_prop_selection_changes, edit_widget))
+
+    def on_prop_selection_changes(self, edit_widget):
+
+
+
+        model = self.usdviewApi.dataModel
+        focus_prop = model.selection.getFocusProp()
+
+        if focus_prop is None:
+            focus_prim_path, focus_prop_name = (model.selection.getFocusComputedPropPath())
+            if not focus_prim_path:
+                return
+            focus_prop_path = focus_prim_path.AppendProperty(focus_prop_name)
+            focus_prop = model.stage.GetPropertyAtPath(focus_prop_path)
+
+        else:
+            focus_prim_path = focus_prop.GetPrimPath()
+            focus_prop_name = focus_prop.GetName()
+
+        print("-" * 50, focus_prop_name, "-" * 50)
+        edit_widget.populate(prop=focus_prop, viewer=self.usdviewApi)
+
 
     def on_save_overrides(self):
         self._save_session("foo.usda")
@@ -115,6 +180,12 @@ class SceneOverrides(plugin.PluginContainer):
 
         temp_stage.Save()
 
+    def on_save_snap(self):
+        image = self.usdviewApi.GrabViewportShot()
+        # image = self.usdviewApi.GrabWindowShot()
+        image.save("output_image.png", "PNG")
+
+        print("on_save_snap")
 
 
 class CamerasViewWidget(QtWidgets.QWidget):
@@ -165,7 +236,7 @@ def predict_camera_name(stage):
     cameras_prim = create_prim(stage, CAMERAS_ROOT)
     # cameras_prim = UsdGeom.Xform.Define(stage, CAMERAS_ROOT)
     children = cameras_prim.GetPrim().GetChildrenNames()
-    path = Sdf.Path("{}/{}".format(CAMERAS_ROOT, "camera"+str(len(children)+1)))
+    path = Sdf.Path("{}/{}".format(CAMERAS_ROOT, "camera" + str(len(children) + 1)))
     path = path.GetPrimPath()
     return path
 
@@ -176,6 +247,17 @@ def create_prim(stage, prim_path, prim_type="Xform"):
     return prim
 
 
+def find_all_tab_widgets(parent, name):
+    tab_widgets = []
+
+    def recursive_find(widget):
+        for child in widget.children():
+            if isinstance(child, QtWidgets.QTabWidget) and child.objectName() == name:
+                tab_widgets.append(child)
+            recursive_find(child)
+
+    recursive_find(parent)
+    return tab_widgets
 
 
 # We load the PluginContainer using libplug so it needs to be a defined Tf.Type.
