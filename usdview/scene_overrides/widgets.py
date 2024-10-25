@@ -82,23 +82,15 @@ def decompose_matrix(matrix):
 
 
 def compose_matrix(translation, rotation, scale):
-    matrix = Gf.Matrix4d(1.0)
+    transform = Gf.Transform()
+    transform.SetScale(Gf.Vec3d(*scale))
 
-    rot = Gf.Rotation()
-    roty = Gf.Rotation(Gf.Vec3d(0, 1, 0), rotation[1])
-    rotx = Gf.Rotation(Gf.Vec3d(1, 0, 0), rotation[0])
-    rotz = Gf.Rotation(Gf.Vec3d(0, 0, 1), rotation[2])
-    rot = rotx * roty * rotz
-
-    rotation_matrix = Gf.Matrix3d(rot)
-    for i in range(3):
-        rotation_matrix.SetRow(i, rotation_matrix.GetRow(i) * scale[i])
-
-    matrix.SetRotateOnly(rotation_matrix)
-
-    matrix.SetTranslateOnly(Gf.Vec3d(*translation))
-
-    return matrix
+    rot = Gf.Rotation(Gf.Vec3d(1, 0, 0), rotation[0]) * \
+          Gf.Rotation(Gf.Vec3d(0, 1, 0), rotation[1]) * \
+          Gf.Rotation(Gf.Vec3d(0, 0, 1), rotation[2])
+    transform.SetRotation(rot)
+    transform.SetTranslation(Gf.Vec3d(*translation))
+    return transform.GetMatrix()
 
 
 class ListItemSignalWrapper(QtCore.QObject):
