@@ -1,0 +1,31 @@
+{
+  "husk": {
+    "args":[
+        ["--usd-input", "{usdFile}"],
+        ["--renderer", "{renderer}"],
+        ["--output", "{outputFile}"],
+        ["--frame", "{frameStart}"],
+        ["--frame-count", "{chunkSize}"],
+        ["--frame-inc", "{frameIncement}"],
+        ["--make-output-path"],
+        ["--settings", "{renderSettings}"],
+        [ "--camera", "{camera}"],
+        ["--verbose", "{verbose}"],
+        [ "--threads", "{threads}"],
+        [ "--res", "{widthSize}", "{heightSize}"],
+        [ "--res-scale", "{scaleSize}"],
+        ["--tile-suffix", "{tileSuffix}"],
+        ["--tile-count", "{tileX}", "{tileY}"],
+        ["--tile-index", "{tileIndex}"],
+        ["--postrender-script", "{postRenderScript}"],
+        ["--prerender-script", "{preRenderScript}"],
+        ["--preframe-script", "{preFrameScript}"],
+        ["--postframe-script", "{postFrameScript}"]
+      ],
+    "logs": {
+      "progress": ["ALF_PROGRESS (\\d+)%"],
+      "done": ["ALF_PROGRESS 100%"],
+      "error": ["ERROR.*"]
+    }
+  }
+}

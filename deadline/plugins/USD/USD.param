@@ -1,0 +1,61 @@
+[About]
+Type=label
+Label=About
+Category=About Plugin
+CategoryOrder=-1
+Index=0
+Default=USD Plugin for Deadline
+Description=Not configurable
+
+[husk_renderExecutable_20.5.278]
+Type=multilinemultifilename
+Label=husk 20.5.278
+Category=Render Executables
+CategoryOrder=0
+Default=C:\Program Files\Side Effects Software\Houdini 20.5.278\bin\husk.exe;/Applications/Side Effects Software/Houdini 19.5.xxx/Houdini/MacOS/husk;/opt/Side Effects Software/Houdini 19.5.xxx/husk
+Description=The path to the Husk executable file used for rendering. Enter alternative paths on separate lines.
+
+[husk_renderExecutable_20.0.547]
+Type=multilinemultifilename
+Label=husk 20.0.547
+Category=Render Executables
+CategoryOrder=0
+Default=C:\Program Files\Side Effects Software\Houdini 20.0.547\bin\husk.exe;/Applications/Side Effects Software/Houdini 19.5.xxx/Houdini/MacOS/husk;/opt/Side Effects Software/Houdini 19.5.xxx/husk
+Description=The path to the Husk executable file used for rendering. Enter alternative paths on separate lines.
+
+
+[husk_renderExecutable_19.5.303]
+Type=multilinemultifilename
+Label=Husk 19.5.303
+Category=Render Executables
+CategoryOrder=0
+Default=C:\Program Files\Side Effects Software\Houdini 19.5.303\bin\husk.exe;/Applications/Side Effects Software/Houdini 19.5.xxx/Houdini/MacOS/husk;/opt/Side Effects Software/Houdini 19.5.xxx/husk
+Description=The path to the Husk executable file used for rendering. Enter alternative paths on separate lines.
+
+
+[ConfigFile]
+Type=filename
+Label=Global Config File
+Category=Configuration Options
+CategoryOrder=1
+Index=0
+Default=
+Description=A global package file to be used for rendering. If left blank, the package.json file in the user home directory will be used instead.
+
+[ModulePaths]
+Type=MultiLineMultiFolder
+Label=Module Paths
+Category=Configuration Options
+CategoryOrder=1
+Index=1
+Default=
+Description=Additional paths to search for modules (one path per line).
+
+[SearchPaths]
+Type=MultiLineMultiFolder
+Label=Search Paths
+Category=Configuration Options
+CategoryOrder=1
+Index=2
+Default=
+Description=Additional paths to search for includes (one path per line).

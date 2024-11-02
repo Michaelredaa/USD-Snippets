@@ -1,0 +1,85 @@
+[USDFile]
+Type=filename
+Label=USD Filename
+Category=USD Options
+Index=1
+Description=The USD stage filename as it exists on the network
+Required=false
+DisableIfBlank=true
+
+[Renderer]
+Type=string
+Values=Karma;
+Label=Renderer
+Category=USD Options
+Index=2
+Description=The renderer to use for rendering.
+Required=false
+DisableIfBlank=false
+
+[Executable]
+Type=string
+Values=husk;
+Label=Executable
+Category=USD Options
+Index=3
+Description=The render executable to use for rendering.
+Required=false
+DisableIfBlank=false
+
+[RenderSetting]
+Type=string
+Label=RenderSetting
+Category=USD Options
+Index=4
+Description=The RenderSetting to render within the scene.
+Required=false
+DisableIfBlank=true
+
+[Camera]
+Type=string
+Label=Camera
+Category=USD Options
+Index=4
+Description=The camera to render within the scene.
+Required=false
+DisableIfBlank=true
+
+[OutputDirectory0]
+Type=string
+Label=OutputDirectory0
+Category=USD Options
+Index=5
+Description=The path of render output.
+Required=false
+DisableIfBlank=false
+
+[Threads]
+Type=integer
+Minimum=0
+Maximum=64
+Label=Threads
+Category=Rendering Options
+Index=1
+Description=The number of rendering threads (0 to use the value specified in the Clarisse configuration file)
+Required=false
+DisableIfBlank=true
+
+[Verbose]
+Type=boolean
+Label=Verbose Logging
+Category=Rendering Options
+Index=2
+Description=Enables verbose logging during rendering.
+Required=false
+DisableIfBlank=true
+
+[Version]
+Type=label
+Label=Version
+Category=Rendering Options
+Index=3
+Description=The version of Renderer to use to render.
+Required=false
+DisableIfBlank=true
+

@@ -1,0 +1,13 @@
+{
+    "env": [
+        {
+            "DEADLINE_SUBMITTER_DIR": [
+                "$HOUDINI_PACKAGE_PATH",
+                "/DeadlineRepository10/submission/USD/Main"
+            ]
+        },
+        {
+            "HOUDINI_PATH": "$DEADLINE_SUBMITTER_DIR"
+        }
+    ]
+}
