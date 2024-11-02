@@ -3,14 +3,6 @@ import numpy as np
 
 from pxr import Usd, Sdf, UsdGeom
 
-node = hou.pwd()
-stage = node.editableStage()
-
-prim = stage.GetPrimAtPath("/grid1/mesh_0")
-
-# random data
-scatter = hou.ch("scatter_points")
-
 
 def random_groups_vectors(num_values: int, num_groups: int, seed=101) -> np.ndarray:
     """
@@ -27,7 +19,7 @@ def random_groups_vectors(num_values: int, num_groups: int, seed=101) -> np.ndar
     return np.array(groups)
 
 
-def scatter_points(prim, num_points, seed=101):
+def scatter_points(prim: Usd.Prim, num_points: int, seed=101):
     mesh = UsdGeom.Mesh(prim)
 
     points_attr = mesh.GetPointsAttr()
@@ -102,10 +94,16 @@ def scatter_points_with_dis(prim, num_points, min_distance= 0.1, seed=101):
         if np.all(distances >= min_distance):
             new_points = np.vstack((new_points, candidate_points))
 
+
+
+node = hou.pwd()
+stage = node.editableStage()
+
+prim = stage.GetPrimAtPath("/grid1/mesh_0")
+scatter = hou.ch("scatter_points")
+
 particle_set = UsdGeom.Points.Define(stage, '/grid1/points')
 particle_set.CreatePointsAttr(scatter_points(prim, scatter))
-
-
 
 
 
