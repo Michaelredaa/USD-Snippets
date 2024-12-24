@@ -6,6 +6,25 @@ Documentation:
 from pxr import Usd, Sdf, UsdShade, UsdGeom, Gf
 
 
+def expose_input_to_material(input_prim: Usd.Prim, input_name: str, material_prim: Usd.Prim, material_input_name: str, default_value=None) -> UsdShade.Input:
+    """
+    Exposes a shader parameter to a material, allowing it to be edited using the editMaterialProperties1 function.
+    """
+    material = UsdShade.Material(material_prim)
+    
+    shader_node = UsdShade.Shader(input_prim)
+    shader_input = shader_node.GetInput(input_name)
+    input_type = shader_input.GetTypeName()
+    
+    material_input = material.CreateInput(material_input_name, input_type)
+    shader_input.ConnectToSource(material_input)
+    
+    if default_value:
+        material_input.Set(default_value)
+    
+    return material_input
+
+
 def get_bound_geoms(material_prim: Usd.Prim):
     """
     To get all bound geom with specific material prim
