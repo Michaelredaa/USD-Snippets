@@ -2,12 +2,12 @@
   "Plugins": [
     {
       "Type": "python",
-      "Name": "scene_overrides",
+      "Name": "property_editor",
       "Info": {
         "Types": {
-          "scene_overrides.SceneOverrides": {
+          "property_editor.PropertyEditor": {
             "bases": ["pxr.Usdviewq.plugin.PluginContainer"],
-            "displayName": "Sence Overrides"
+            "displayName": "Property Editor"
           }
         }
       }
