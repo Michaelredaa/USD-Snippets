@@ -192,8 +192,15 @@ def __main__(*args):
     overrideCameraCB = scriptDialog.AddSelectionControlToGrid("overrideCameraCB","CheckBoxControl", False,"Override Camera", 3, 0,"Enable this option to override the camera of the render settings.", colSpan=1)
     scriptDialog.AddControlToGrid("CameraBox","TextControl","/cameras/camera1", 3, 1, colSpan=4)
     settings.append("CameraBox")
-    scriptDialog.EndGrid()
     OnOverrideCameraChanged(False)
+
+    # timelimit
+    timelimitCB = scriptDialog.AddSelectionControlToGrid("timelimitCB","CheckBoxControl", False,"Time Limit", 4, 0,"Enable this option will cancel the render if it takes more than ‹sec› seconds. The default -1 is no time limit", colSpan=1)
+    scriptDialog.AddControlToGrid("timelimitBox","TextControl","-1", 4, 1, colSpan=4)
+    settings.append("timelimitBox")
+    OnTimelimitCBChanged(False)
+
+    scriptDialog.EndGrid()
 
     scriptDialog.EndTabPage()
     scriptDialog.EndTabControl()
@@ -371,6 +378,10 @@ def SubmitButtonPressed(*args):
         writer.WriteLine("CameraOverrideEnable=%s"% scriptDialog.GetValue("overrideCameraCB"))
         writer.WriteLine("Camera=%s"% scriptDialog.GetValue("CameraBox"))
 
+    if scriptDialog.GetValue("timelimitCB"):
+        writer.WriteLine("TimelimitEnable=%s"% scriptDialog.GetValue("timelimitCB"))
+        writer.WriteLine("Timelimit=%s"% scriptDialog.GetValue("timelimitBox"))
+
     writer.WriteLine("ChunkSize=%s"% scriptDialog.GetValue("ChunkSizeBox"))
 
     writer.Close()
@@ -419,10 +430,12 @@ def Callbacks(*args):
     tileBox = scriptDialog.findChild(CheckBoxControl.CheckBoxControl,"TileCB")
     resoultionBox = scriptDialog.findChild(CheckBoxControl.CheckBoxControl,"OverrideSizeCB")
     overrideCameraBox = scriptDialog.findChild(CheckBoxControl.CheckBoxControl,"overrideCameraCB")
+    timelimitCB = scriptDialog.findChild(CheckBoxControl.CheckBoxControl,"timelimitCB")
 
     tileBox.stateChanged.connect(OnTileCBChanged)
     resoultionBox.stateChanged.connect(OnOverrideSizeChanged)
     overrideCameraBox.stateChanged.connect(OnOverrideCameraChanged)
+    timelimitCB.stateChanged.connect(OnTimelimitCBChanged)
 
     executableBox.currentTextChanged.connect(OnExecutableChanged)
 
@@ -449,6 +462,9 @@ def OnOverrideSizeChanged(state):
 
 def OnOverrideCameraChanged(state):
     scriptDialog.SetEnabled("CameraBox", state)
+
+def OnTimelimitCBChanged(state):
+    scriptDialog.SetEnabled("timelimitBox", state)
 
 def OpenUsdview():
     executable = scriptDialog.GetValue("ExecutableBox")

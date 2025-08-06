@@ -20,7 +20,7 @@
         ["--postrender-script", "{postRenderScript}"],
         ["--prerender-script", "{preRenderScript}"],
         ["--preframe-script", "{preFrameScript}"],
-        ["--postframe-script", "{postFrameScript}"]
+        ["--timelimit", "{timelimit}"]
       ],
     "logs": {
       "progress": ["ALF_PROGRESS (\\d+)%"],

@@ -34,6 +34,7 @@ def GetRendererSettings():
 class USDPlugin(DeadlinePlugin):
 
     def __init__(self):
+        super().__init__()
         self.InitializeProcessCallback += self.InitializeProcess
         self.RenderExecutableCallback += self.RenderExecutable
         self.RenderArgumentCallback += self.RenderArgument
@@ -126,6 +127,11 @@ class USDPlugin(DeadlinePlugin):
         if self.GetBooleanPluginInfoEntryWithDefault("CameraOverrideEnable", False):
             self.formateCommandlineArgs(
                 camera=self.GetPluginInfoEntryWithDefault("Camera", "/cameras/camera1")
+            )
+
+        if self.GetBooleanPluginInfoEntryWithDefault("TimelimitEnable", False):
+            self.formateCommandlineArgs(
+                timelimit=self.GetPluginInfoEntryWithDefault("Timelimit", "-1")
             )
 
         # tiles
