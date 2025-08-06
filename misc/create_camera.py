@@ -41,6 +41,15 @@ def set_cards_textures(prim: Usd.Prim, xpos: str, ypos: str, zpos: str, nxpos=No
 def create_projection_cameras(prim: Usd.Prim, cameras_root='/cameras'):
 
     stage:           Usd.Stage          = prim.GetStage()
+
+    # time_code = Usd.TimeCode.Default()
+    # bbox_cache = UsdGeom.BBoxCache(time_code, [UsdGeom.Tokens.default_, UsdGeom.Tokens.render],
+    #                                useExtentsHint=True, ignoreVisibility=False)
+                                    
+    # bbox = bbox_cache.ComputeWorldBound(prim)
+    # size = bbox.GetBox().GetSize()
+    # center = bbox.GetBox().GetMidpoint()
+    
     prim_imageable:  UsdGeom.Imageable  = UsdGeom.Imageable(prim)
     bound:           Gf.BBox3d          = prim_imageable.ComputeWorldBound(Usd.TimeCode.Default(), UsdGeom.Tokens.default_)
     bbox_range:      Gf.Range3d         = bound.ComputeAlignedBox()
