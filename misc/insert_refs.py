@@ -50,3 +50,48 @@ for i in range(1, 10):
     xformable.AddTranslateOp().Set(value=translation)
 
 # stage.RemovePrim(holder_prim.GetPath())
+
+
+
+
+
+
+
+from pxr import Sdf, Usd, Kind, Gf, UsdGeom
+
+node = hou.pwd()
+stage = node.editableStage()
+
+asset_prim_path = '/pig'
+asset_class_path = '/more'
+
+instanceable = True
+
+def inherit_from(ref_prim, class_prim):
+    class_prim.SetSpecifier(Sdf.SpecifierClass)
+    prim.SetInstanceable(False)
+    
+    inherit = ref_prim.GetInherits()
+    inherit.AddInherit(class_prim.GetPath())
+    
+    
+prim = stage.GetPrimAtPath(asset_prim_path)
+
+
+asset_name = prim.GetName()
+asset_class_path = Sdf.Path(asset_class_path)
+asset_class_path = asset_class_path.AppendPath(f'__class__{asset_name}')
+asset_class_prim = stage.OverridePrim(asset_class_path)
+
+inherit_from(prim, asset_class_prim)
+
+
+prim.SetInstanceable(instanceable)
+model_API = Usd.ModelAPI(prim)
+model_API.SetKind(Kind.Tokens.component)
+
+
+
+
+
+
