@@ -10,27 +10,46 @@ handler.setFormatter(formatter)
 if not logger.hasHandlers():
     logger.addHandler(handler)
 
+import enum
 import os
 from pxr import Usd, UsdGeom, Sdf, Vt, Gf
 
 MESH_ATTRS = ["extent", "points", "normals"]
 
-def delete_empty_transforms_or_scopes(stage):
-    """Delete empty Xform or Scope prims from the USD stage.
+class AttrCopyMode(enum.Enum):
+    ALL = "all"
+    STATIC = "static"
+    FRAME = "frame"
+
+
+def is_empty_prim(prim):
+    """Check if a prim is empty.
 
     Args:
-        stage (Usd.Stage): The USD stage to clean.
+        prim (Usd.Prim): The prim to check.
+
+    Returns:
+        bool: True if the prim is empty, False otherwise.
     """
-    to_delete = []
-    for prim in Usd.PrimRange(stage.GetPseudoRoot()):
-        if prim == stage.GetPseudoRoot():
-            continue
-        if prim.IsA(UsdGeom.Xform) or prim.GetTypeName() == "Scope":
-            if not list(prim.GetChildren()) and len(list(prim.GetAuthoredAttributes())) == 0:
-                to_delete.append(prim.GetPath())
-    for path in to_delete:
-        logger.info(f"Removing empty prim: {path}")
-        stage.RemovePrim(path)
+    if prim.IsA(UsdGeom.Xform) or prim.GetTypeName() == "Scope":
+        if not list(prim.GetChildren()) and len(list(prim.GetAuthoredAttributes())) == 0:
+            return True
+    return False
+
+
+def is_transformable_prim(prim):
+    """Check if a prim is a transformable prim.
+
+    Args:
+        prim (Usd.Prim): The prim to check.
+
+    Returns:
+        bool: True if the prim is a transformable prim, False otherwise.
+    """
+    if prim.IsA(UsdGeom.Xformable):
+        return True
+
+    return any(child.IsA(UsdGeom.Xformable) for child in prim.GetDescendants())
 
 
 def delete_non_geom_prims(stage):
@@ -55,20 +74,41 @@ def delete_non_geom_prims(stage):
     return root_prim
 
 
-def get_prim_attributes_for_frame(prim, frame=None):
-    """Get the list of attributes to export for a given prim and frame.
+def iter_stage_prims(stage):
+    """Depth-first iteration over all prims under ``stage``, excluding the pseudo-root."""
+    for prim in Usd.PrimRange(stage.GetPseudoRoot()):
+        if prim != stage.GetPseudoRoot():
+            yield prim
+
+
+def clean_stage(stage):
+    """Copy prims into a new in-memory USD stage.
 
     Args:
-        prim (Usd.Prim): The USD prim.
-        frame (int, optional): The frame to export. If None, exports all attributes.
+        stage (Usd.Stage): The source USD stage.
 
     Returns:
-        list: List of Usd.Attribute objects to export.
+        tuple: The root prim and the new in-memory stage.
     """
-    if frame:
-        return [attr for attr in prim.GetAttributes() if attr.GetName() in MESH_ATTRS]
-    else:
-        return prim.GetAttributes()
+    clean_stage = Usd.Stage.CreateInMemory()
+
+    root_prim = None
+    for prim in iter_stage_prims(stage):
+        if root_prim is None:
+            root_prim = prim
+        
+        if is_empty_prim(prim):
+            continue
+
+        if not is_transformable_prim(prim):
+            continue
+
+        dst_prim = clean_stage.DefinePrim(prim.GetPath(), prim.GetTypeName())
+        copy_prim_metadata(prim, dst_prim)
+        copy_prim_attributes(prim, dst_prim, attr_copy_mode=AttrCopyMode.ALL)
+
+    return root_prim, clean_stage
+
 
 def delete_file_if_exists(filepath):
     """Delete the file if it already exists.
@@ -83,33 +123,55 @@ def delete_file_if_exists(filepath):
     except Exception as e:
         logger.error(f"Error deleting file {filepath}: {e}")
 
-def copy_prim_attributes(src_prim, dst_prim, attrs, frame=None):
-    """Copy attributes and metadata from src_prim to dst_prim for the specified frame.
+def copy_prim_attributes(src_prim, dst_prim, frame=None, attr_copy_mode=AttrCopyMode.STATIC, mask_attrs=None):
+    """Copy attributes and metadata from src_prim to dst_prim.
 
     Args:
         src_prim (Usd.Prim): Source prim.
         dst_prim (Usd.Prim): Destination prim.
-        attrs (list): List of Usd.Attribute objects to copy.
-        frame (int, optional): Frame to export. If None, exports default values.
+        frame (int, optional): Frame to export. If None, exports default values when no range is given.
+        start_frame (int, optional): Start frame (inclusive).
+        end_frame (int, optional): End frame (exclusive).
     """
-    for attr in attrs:
-        name = attr.GetName()
-        type_name = attr.GetTypeName()
-        out_attr = dst_prim.CreateAttribute(name, type_name, custom=attr.IsCustom())
-        if frame:
-            val = attr.Get(frame)
-            if val is not None:
-                out_attr.Set(val, time=frame)
+
+    for src_attr in src_prim.GetAttributes():
+        if mask_attrs and src_attr.GetName() not in mask_attrs:
+            continue
+
+        if not src_attr.HasValue():
+            continue
+
+        dst_attr = dst_prim.CreateAttribute(
+            src_attr.GetName(),
+            src_attr.GetTypeName(),
+            custom=src_attr.IsCustom()
+            )
+        
+        times = src_attr.GetTimeSamples()
+        if times:
+            if attr_copy_mode == AttrCopyMode.STATIC:
+                value = src_attr.Get(time=times[0])
+                if not value:
+                    value = src_attr.Get()
+                dst_attr.Set(value)
+            elif attr_copy_mode == AttrCopyMode.FRAME:
+                value = src_attr.Get(frame)
+                if value:
+                    dst_attr.Set(value, time=frame)
+
+            elif attr_copy_mode == AttrCopyMode.ALL:
+                for time in times:
+                    value = src_attr.Get(time=time)
+                    if value:
+                        dst_attr.Set(value, time=time)
+                    else:
+                        dst_attr.Set(value)
         else:
-            times = attr.GetTimeSamples()
-            if times:
-                val = attr.Get(time=times[0])
-            else:
-                val = attr.Get()
-            if val is not None:
-                out_attr.Set(val)
-        for key, value in attr.GetAllMetadata().items():
-            out_attr.SetMetadata(key, value)
+            value = src_attr.Get()
+            dst_attr.Set(value)
+
+        for key, value in dst_attr.GetAllMetadata().items():
+            dst_attr.SetMetadata(key, value)
 
 
 def copy_prim_metadata(src_prim, dst_prim):
@@ -123,7 +185,7 @@ def copy_prim_metadata(src_prim, dst_prim):
         dst_prim.SetMetadata(key, value)
 
 
-def export_usd_static_snapshot(in_stage, output_usd, frame=None):
+def export_usd_static_snapshot(in_stage, output_usd, frame=None, attr_copy_mode=AttrCopyMode.STATIC, mask_attrs=None):
     """Export a static snapshot of the USD stage at a specific frame.
 
     Args:
@@ -131,14 +193,11 @@ def export_usd_static_snapshot(in_stage, output_usd, frame=None):
         output_usd (str): Output USD file path.
         frame (int, optional): Frame to export. If None, exports default values.
     """
-    logger.info(f"Exporting frame {frame} to: {output_usd} ...")
+    logger.info(f"Exporting {attr_copy_mode.value} to: {output_usd} ...")
     out_stage = Usd.Stage.CreateNew(output_usd)
-    for prim in in_stage.Traverse():
-        if prim == in_stage.GetPseudoRoot():
-            continue
+    for prim in iter_stage_prims(in_stage):
         out_prim = out_stage.DefinePrim(prim.GetPath(), prim.GetTypeName())
-        attrs = get_prim_attributes_for_frame(prim, frame)
-        copy_prim_attributes(prim, out_prim, attrs, frame)
+        copy_prim_attributes(prim, out_prim, frame, attr_copy_mode, mask_attrs)
         copy_prim_metadata(prim, out_prim)
     out_stage.GetRootLayer().Save()
 
@@ -216,9 +275,8 @@ def process(source_anim_file, start_frame, end_frame, static_usd_file=None, anim
         raise FileNotFoundError(f"Error: Animated USD file does not exist: {source_anim_file}")
     
     stage = Usd.Stage.Open(source_anim_file)
-    root_prim = delete_non_geom_prims(stage)
-    delete_empty_transforms_or_scopes(stage)
-    
+    root_prim, stage = clean_stage(stage)
+
     extention = os.path.splitext(source_anim_file)[1]
     
     if not static_usd_file:
@@ -229,13 +287,13 @@ def process(source_anim_file, start_frame, end_frame, static_usd_file=None, anim
         anim_usd_file = source_anim_file.replace(f"{extention}", ".anim.usd")
         delete_file_if_exists(anim_usd_file)
 
-    export_usd_static_snapshot(stage, static_usd_file, frame=None)
+    export_usd_static_snapshot(stage, static_usd_file, attr_copy_mode=AttrCopyMode.STATIC)
 
     anim_frames_files = []
     for frame in range(start_frame, end_frame):
         frame_usd_file = source_anim_file.replace(f"{extention}", f".frame.{frame}.usd")
         delete_file_if_exists(frame_usd_file)
-        export_usd_static_snapshot(stage, frame_usd_file, frame=frame)
+        export_usd_static_snapshot(stage, frame_usd_file, frame=frame, attr_copy_mode=AttrCopyMode.FRAME, mask_attrs=MESH_ATTRS)
         anim_frames_files.append(frame_usd_file)
     build_valueclip(static_usd_file, anim_frames_files, anim_usd_file, start_frame, end_frame, root_prim)
 
