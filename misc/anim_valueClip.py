@@ -52,62 +52,11 @@ def is_transformable_prim(prim):
     return any(child.IsA(UsdGeom.Xformable) for child in prim.GetDescendants())
 
 
-def delete_non_geom_prims(stage):
-    """Delete non-geometry prims from the USD stage.
-
-    Args:
-        stage (Usd.Stage): The USD stage to clean.
-
-    Returns:
-        Usd.Prim: The root geometry prim.
-    """
-    to_delete = []
-    for prim in Usd.PrimRange(stage.GetPseudoRoot()):
-        if prim == stage.GetPseudoRoot():
-            root_prim = prim.GetChildren()[0]
-            continue
-        if not prim.IsA(UsdGeom.Imageable):
-            to_delete.append(prim.GetPath())
-    for path in to_delete:
-        logger.info(f"Removing non-geometry prim: {path}")
-        stage.RemovePrim(path)
-    return root_prim
-
-
 def iter_stage_prims(stage):
     """Depth-first iteration over all prims under ``stage``, excluding the pseudo-root."""
     for prim in Usd.PrimRange(stage.GetPseudoRoot()):
         if prim != stage.GetPseudoRoot():
             yield prim
-
-
-def clean_stage(stage):
-    """Copy prims into a new in-memory USD stage.
-
-    Args:
-        stage (Usd.Stage): The source USD stage.
-
-    Returns:
-        tuple: The root prim and the new in-memory stage.
-    """
-    clean_stage = Usd.Stage.CreateInMemory()
-
-    root_prim = None
-    for prim in iter_stage_prims(stage):
-        if root_prim is None:
-            root_prim = prim
-        
-        if is_empty_prim(prim):
-            continue
-
-        if not is_transformable_prim(prim):
-            continue
-
-        dst_prim = clean_stage.DefinePrim(prim.GetPath(), prim.GetTypeName())
-        copy_prim_metadata(prim, dst_prim)
-        copy_prim_attributes(prim, dst_prim, attr_copy_mode=AttrCopyMode.ALL)
-
-    return root_prim, clean_stage
 
 
 def delete_file_if_exists(filepath):
@@ -122,6 +71,18 @@ def delete_file_if_exists(filepath):
             os.remove(filepath)
     except Exception as e:
         logger.error(f"Error deleting file {filepath}: {e}")
+
+
+def copy_prim_metadata(src_prim, dst_prim):
+    """Copy all metadata from src_prim to dst_prim.
+
+    Args:
+        src_prim (Usd.Prim): Source prim.
+        dst_prim (Usd.Prim): Destination prim.
+    """
+    for key, value in src_prim.GetAllMetadata().items():
+        dst_prim.SetMetadata(key, value)
+
 
 def copy_prim_attributes(src_prim, dst_prim, frame=None, attr_copy_mode=AttrCopyMode.STATIC, mask_attrs=None):
     """Copy attributes and metadata from src_prim to dst_prim.
@@ -174,15 +135,33 @@ def copy_prim_attributes(src_prim, dst_prim, frame=None, attr_copy_mode=AttrCopy
             dst_attr.SetMetadata(key, value)
 
 
-def copy_prim_metadata(src_prim, dst_prim):
-    """Copy all metadata from src_prim to dst_prim.
+def clean_stage(stage):
+    """Copy prims into a new in-memory USD stage.
 
     Args:
-        src_prim (Usd.Prim): Source prim.
-        dst_prim (Usd.Prim): Destination prim.
+        stage (Usd.Stage): The source USD stage.
+
+    Returns:
+        tuple: The root prim and the new in-memory stage.
     """
-    for key, value in src_prim.GetAllMetadata().items():
-        dst_prim.SetMetadata(key, value)
+    clean_stage = Usd.Stage.CreateInMemory()
+
+    root_prim = None
+    for prim in iter_stage_prims(stage):
+        if root_prim is None:
+            root_prim = prim
+        
+        if is_empty_prim(prim):
+            continue
+
+        if not is_transformable_prim(prim):
+            continue
+
+        dst_prim = clean_stage.DefinePrim(prim.GetPath(), prim.GetTypeName())
+        copy_prim_metadata(prim, dst_prim)
+        copy_prim_attributes(prim, dst_prim, attr_copy_mode=AttrCopyMode.ALL)
+
+    return root_prim, clean_stage
 
 
 def export_usd_static_snapshot(in_stage, output_usd, frame=None, attr_copy_mode=AttrCopyMode.STATIC, mask_attrs=None):
