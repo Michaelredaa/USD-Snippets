@@ -23,6 +23,7 @@ if not logger.hasHandlers():
     logger.addHandler(handler)
 
 
+# Constants
 MESH_ATTRS = ["extent", "points", "normals"]
 
 class AttrCopyMode(enum.Enum):
@@ -173,7 +174,7 @@ def clean_stage(stage):
     return root_prim, clean_stage
 
 
-def export_usd_static_snapshot(in_stage, output_usd, frame=None, attr_copy_mode=AttrCopyMode.STATIC, mask_attrs=None):
+def export_usd_snapshot(in_stage, output_usd, frame=None, attr_copy_mode=AttrCopyMode.STATIC, mask_attrs=None):
     """Export a static snapshot of the USD stage at a specific frame.
 
     Args:
@@ -275,13 +276,13 @@ def process(source_anim_file, start_frame, end_frame, static_usd_file=None, anim
         anim_usd_file = source_anim_file.replace(f"{extention}", ".anim.usd")
         delete_file_if_exists(anim_usd_file)
 
-    export_usd_static_snapshot(stage, static_usd_file, attr_copy_mode=AttrCopyMode.STATIC)
+    export_usd_snapshot(stage, static_usd_file, attr_copy_mode=AttrCopyMode.STATIC)
 
     anim_frames_files = []
     for frame in range(start_frame, end_frame):
         frame_usd_file = source_anim_file.replace(f"{extention}", f".frame.{frame}.usd")
         delete_file_if_exists(frame_usd_file)
-        export_usd_static_snapshot(stage, frame_usd_file, frame=frame, attr_copy_mode=AttrCopyMode.FRAME, mask_attrs=MESH_ATTRS)
+        export_usd_snapshot(stage, frame_usd_file, frame=frame, attr_copy_mode=AttrCopyMode.FRAME, mask_attrs=MESH_ATTRS)
         anim_frames_files.append(frame_usd_file)
     build_valueclip(static_usd_file, anim_frames_files, anim_usd_file, start_frame, end_frame, root_prim)
 
