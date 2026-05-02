@@ -1,5 +1,17 @@
+"""Build ValueClip USDs and per-frame mesh snapshots from an animated USD.
+
+Copies a filtered transform hierarchy from the input into an in-memory stage,
+writes a static baseline layer, one layer per time sample for animted mesh attributes,
+and a root USD that valueClips those files across the given frame range.
+Run as a script (see main) or import process and the stage helpers.
+"""
+
 import argparse
 import logging
+import enum
+import os
+
+from pxr import Usd, UsdGeom, Sdf, Vt, Gf
 
 # Configure logger
 logger = logging.getLogger("usd_valueclip")
@@ -10,9 +22,6 @@ handler.setFormatter(formatter)
 if not logger.hasHandlers():
     logger.addHandler(handler)
 
-import enum
-import os
-from pxr import Usd, UsdGeom, Sdf, Vt, Gf
 
 MESH_ATTRS = ["extent", "points", "normals"]
 
