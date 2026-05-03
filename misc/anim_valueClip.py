@@ -20,7 +20,7 @@ def setup_logger() -> logging.Logger:
 
 logger = setup_logger()
 
-MESH_ATTRS: List[str] = ["extent", "points", "normals", "xformOp:transform"]
+MESH_ATTRS: List[str] = ["extent", "points", "xformOp:transform"]
 ROOT_PRIM = "/root"
 
 class AttrCopyMode(enum.Enum):
