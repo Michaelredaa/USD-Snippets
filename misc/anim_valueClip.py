@@ -20,8 +20,8 @@ def setup_logger() -> logging.Logger:
 
 logger = setup_logger()
 
-MESH_ATTRS: List[str] = ["extent", "points", "normals"]
-
+MESH_ATTRS: List[str] = ["extent", "points", "normals", "xformOp:tranform"]
+ROOT_PRIM = "/root"
 
 class AttrCopyMode(enum.Enum):
     """Attribute copy modes for USD export."""
@@ -42,7 +42,7 @@ def is_transformable_prim(prim: Usd.Prim) -> bool:
     """Check whether prim or descendants are transformable."""
     if prim.IsA(UsdGeom.Xformable):
         return True
-    return any(child.IsA(UsdGeom.Xformable) for child in prim.GetDescendants())
+    return any(child.IsA(UsdGeom.Xformable) for child in prim.GetChildren())
 
 
 def iter_stage_prims(stage: Usd.Stage):
@@ -125,17 +125,11 @@ def copy_prim_attributes(
             dst_attr.SetMetadata(key, value)
 
 
-def clean_stage(stage: Usd.Stage) -> Tuple[Usd.Prim, Usd.Stage]:
+def create_clean_stage(stage: Usd.Stage) -> Usd.Stage:
     """Create cleaned in-memory stage containing only valid prims."""
     clean_stage = Usd.Stage.CreateInMemory()
-    root_prim: Optional[Usd.Prim] = None
 
     for prim in iter_stage_prims(stage):
-
-        if root_prim is None:
-            root_prim = prim
-            logger.debug(f"Root prim set: {root_prim.GetPath()}")
-
         if is_empty_prim(prim):
             logger.debug(f"Skipping empty prim: {prim.GetPath()}")
             continue
@@ -145,12 +139,21 @@ def clean_stage(stage: Usd.Stage) -> Tuple[Usd.Prim, Usd.Stage]:
             continue
 
         logger.debug(f"Adding prim: {prim.GetPath()}")
-
-        dst_prim = clean_stage.DefinePrim(prim.GetPath(), prim.GetTypeName())
+        
+        dst_prim = clean_stage.DefinePrim(
+            Sdf.Path(ROOT_PRIM).AppendPath(
+                prim.GetPath()
+                ),
+             prim.GetTypeName()
+            )
         copy_prim_metadata(prim, dst_prim)
         copy_prim_attributes(prim, dst_prim, attr_copy_mode=AttrCopyMode.ALL)
 
-    return root_prim, clean_stage
+    clean_stage.SetDefaultPrim(
+        clean_stage.GetPrimAtPath(ROOT_PRIM)
+        )
+
+    return clean_stage
 
 
 def export_usd_snapshot(
@@ -253,7 +256,8 @@ def process(
     logger.info(f"Processing: {source_anim_file}")
 
     stage = Usd.Stage.Open(source_anim_file)
-    root_prim, stage = clean_stage(stage)
+    stage = create_clean_stage(stage)
+    root_prim = stage.GetDefaultPrim()
 
     ext = os.path.splitext(source_anim_file)[1]
 
