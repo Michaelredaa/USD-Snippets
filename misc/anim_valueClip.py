@@ -140,10 +140,9 @@ def create_clean_stage(stage: Usd.Stage) -> Usd.Stage:
 
         logger.debug(f"Adding prim: {prim.GetPath()}")
         
+        prim_path = Sdf.Path(ROOT_PRIM + prim.GetPath().pathString)
         dst_prim = clean_stage.DefinePrim(
-            Sdf.Path(ROOT_PRIM).AppendPath(
-                prim.GetPath()
-                ),
+            prim_path,
              prim.GetTypeName()
             )
         copy_prim_metadata(prim, dst_prim)
